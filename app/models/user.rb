@@ -1,8 +1,14 @@
 class User < ApplicationRecord
 	has_many :microposts, dependent: :destroy
-	has_many :active_relationships, class_name: "Relationship",
+	has_many :active_relationships, class_name: Relationship.name,
 									foreign_key: "follower_id",
 									dependent: :destroy
+	has_many :passive_relationships, class_name: Relationship.name,
+									foreign_key: "followed_id",
+									dependent: :destroy
+	has_many :following, through: :active_relationships, source: :followed
+	has_many :followers, through: :passive_relationships, source: :follower
+
 	attr_accessor :remember_token
 	before_save :downcase_email
 	validates :date_of_birth, presence: true, if: :for_date_of_birth
@@ -47,6 +53,18 @@ class User < ApplicationRecord
 	def feed
 		self.microposts
 	end
+	# Follows a user.
+	def follow(other_user)
+		following << other_user
+	end
+		# Unfollows a user.
+	def unfollow(other_user)
+		following.delete(other_user)
+	end
+	# Returns true if the current user is following the other user.
+	def following?(other_user)
+		following.include?(other_user)
+	end
 	
 	private
  	 def downcase_email
@@ -59,6 +77,4 @@ class User < ApplicationRecord
 		 	errors.add(:date_of_birth, 'mày đen từ tương lai à')
  	 	end
  	 end
-
-	# Returns true if the given user is the current user.
 end
